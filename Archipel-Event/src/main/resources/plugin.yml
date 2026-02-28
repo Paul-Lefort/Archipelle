@@ -1,0 +1,8 @@
+name: ArchiEvent
+version: 1.0
+main: fr.archipel.archiEvent.ArchiEvent
+api-version: 1.21
+commands:
+  archievent:
+    description: Commande principale d'ArchiEvent
+    permission: archievent.admin

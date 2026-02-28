@@ -1,0 +1,8 @@
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/ArchiEvent.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/EventData.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/commands/ArchiEventCommand.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/quiz/QuizChatListener.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/quiz/QuizLogic.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/listeners/MenuListener.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/manager/MenuManager.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/manager/RewardManager.java

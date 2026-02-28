@@ -1,0 +1,9 @@
+fr/archipel/archiEvent/EventData$RewardType.class
+fr/archipel/archiEvent/EventData.class
+fr/archipel/archiEvent/ArchiEvent.class
+fr/archipel/archiEvent/manager/RewardManager.class
+fr/archipel/archiEvent/manager/MenuManager.class
+fr/archipel/archiEvent/commands/ArchiEventCommand.class
+fr/archipel/archiEvent/games/quiz/QuizChatListener.class
+fr/archipel/archiEvent/listeners/MenuListener.class
+fr/archipel/archiEvent/games/quiz/QuizLogic.class
