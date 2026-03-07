@@ -14,7 +14,7 @@ import java.util.List;
 public class QuizLogic {
 
     private final EventData eventData;
-    private final QuizData quizData; // On ajoute le nouveau conteneur spécifique
+    private final QuizData quizData;
 
     public QuizLogic(EventData eventData, QuizData quizData) {
         this.eventData = eventData;
@@ -55,19 +55,16 @@ public class QuizLogic {
 
     public void handleQuestion(Player player, String[] args) {
 
-        // 1. Vérification du type d'event via EventData
         if (eventData.getEventType() == null || !eventData.getEventType().contains("Quiz")) {
             player.sendMessage("§c§l[!] §7Tu dois d'abord créer un événement Quiz.");
             return;
         }
 
-        // 2. Vérification des arguments
         if (args.length < 3) {
             player.sendMessage("§cUsage: /archievent question <Question...> <Réponse>");
             return;
         }
 
-        // 3. Extraction de la question et de la réponse
         String answer = args[args.length - 1];
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i < args.length - 1; i++) {
@@ -75,22 +72,18 @@ public class QuizLogic {
         }
         String question = sb.toString().trim();
 
-        // 4. Utilisation de QuizData (au lieu d'eventData)
         quizData.clearQuestionWinners();
         quizData.setQuestion(question);
         quizData.setAnswer(answer);
 
-        // 5. Annonce
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
         Bukkit.broadcastMessage("§6§l    QUESTION :");
         Bukkit.broadcastMessage("§f    " + question);
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
 
-        // 6. Timer
         JavaPlugin plugin = JavaPlugin.getPlugin(ArchiEvent.class);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            // On vérifie dans quizData
             if (quizData.getAnswer() == null) return;
 
             if (quizData.getCurrentQuestionWinners().isEmpty()) {
@@ -100,7 +93,6 @@ public class QuizLogic {
                 Bukkit.broadcastMessage("§6§l[ArchiEvent] §7Fin du temps !");
             }
 
-            // Clean up via quizData
             quizData.setAnswer(null);
             quizData.clearQuestionWinners();
 

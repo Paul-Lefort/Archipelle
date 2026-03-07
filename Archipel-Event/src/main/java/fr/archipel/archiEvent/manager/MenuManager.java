@@ -63,14 +63,11 @@ public class MenuManager {
     public void openRewardsMenu(Player player) {
         Inventory gui = Bukkit.createInventory(null, 27, "§8Configuration des Récompenses");
 
-        // On boucle sur les 3 places du podium
         for (int rank = 1; rank <= 3; rank++) {
             int startSlot = (rank - 1) * 9;
 
-            // Label de la ligne (1er, 2ème, 3ème)
             gui.setItem(startSlot, createItem(Material.PAPER, "§e§l" + rank + (rank == 1 ? "er" : "ème") + " Place", "§7Configure les lots à droite"));
 
-            // On place les icônes de l'Enum RewardType
             EventData.RewardType[] types = EventData.RewardType.values();
             for (int j = 0; j < types.length; j++) {
                 EventData.RewardType type = types[j];
@@ -82,13 +79,11 @@ public class MenuManager {
             }
         }
 
-        // Bouton Valider
         gui.setItem(26, createItem(Material.EMERALD_BLOCK, "§a§lVALIDER", "§7Enregistrer la config"));
 
         player.openInventory(gui);
     }
 
-    // Utilitaire pour créer des items rapidement
     private ItemStack createItem(Material mat, String name, String... lore) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();

@@ -55,7 +55,6 @@ public class MenuListener implements Listener {
                 for (int rank = 1; rank <= 3; rank++) {
                     int startSlot = (rank - 1) * 9;
 
-                    // On boucle sur l'Enum pour retrouver les items dans l'inv
                     RewardType[] types = RewardType.values();
                     for (int j = 0; j < types.length; j++) {
                         int targetSlot = startSlot + 2 + j;
@@ -74,7 +73,6 @@ public class MenuListener implements Listener {
             }
 
             // --- CLIC SUR UNE CLÉ (+ / -) ---
-            // On vérifie si l'item cliqué correspond à un de nos RewardType
             for (RewardType type : RewardType.values()) {
                 if (clicked.getType() == type.getGuiMaterial()) {
                     boolean isAdd = (event.getClick() == ClickType.LEFT);
@@ -97,7 +95,6 @@ public class MenuListener implements Listener {
         int count = 0;
 
         if (lore != null && !lore.isEmpty()) {
-            // Extraction propre du nombre dans le Lore "Quantité: X"
             String digits = lore.get(0).replaceAll("[^0-9]", "");
             count = digits.isEmpty() ? 0 : Integer.parseInt(digits);
         }
@@ -105,7 +102,6 @@ public class MenuListener implements Listener {
         if (add) count++;
         else if (count > 0) count--;
 
-        // Mise à jour visuelle du Lore
         List<String> newLore = new ArrayList<>();
         newLore.add("§fQuantité : §b" + count);
         newLore.add(" ");
@@ -114,8 +110,6 @@ public class MenuListener implements Listener {
         meta.setLore(newLore);
         item.setItemMeta(meta);
 
-        // Petit effet visuel : si quantité > 0, on remet l'item, sinon on pourrait laisser l'item mais grisé
-        // Ici on garde l'item original pour ne pas perdre le joueur
         item.setType(originalMaterial);
     }
 
