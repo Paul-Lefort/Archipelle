@@ -4,6 +4,7 @@ import fr.archipel.archiEvent.EventData;
 import fr.archipel.archiEvent.EventData.RewardType; // Import de l'Enum
 import fr.archipel.archiEvent.games.quiz.QuizLogic;
 import fr.archipel.archiEvent.manager.MenuManager;
+import fr.archipel.archiEvent.games.dac.DACLogic;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.command.Command;
@@ -20,11 +21,12 @@ public class ArchiEventCommand implements CommandExecutor {
 
     private final EventData eventData;
     private final QuizLogic quizLogic;
+    private final DACLogic dacLogic;
 
     public ArchiEventCommand(EventData eventData) {
         this.eventData = eventData;
-        // INITIALISATION CRUCIALE :
         this.quizLogic = new QuizLogic(eventData);
+        this.dacLogic = new DACLogic(eventData);
     }
 
     @Override
@@ -48,6 +50,9 @@ public class ArchiEventCommand implements CommandExecutor {
                 break;
             case "question":
                 quizLogic.handleQuestion(player, args);
+                break;
+            case "participe":
+                dacLogic.addPlayer(player);
                 break;
             case "stop":
                 handleStop(player);
@@ -73,18 +78,27 @@ public class ArchiEventCommand implements CommandExecutor {
             return;
         }
 
-        if (eventData.getEventType().contains("Quiz")) {
-            QuizLogic quizLogic = new QuizLogic(eventData);
-            quizLogic.quizStart();
-        }
-        else if (eventData.getEventType().contains("Spleef")) {
-            player.sendMessage("§f§l[!] §fL'événement Spleef est configuré.");
-            // Plus tard : SpleefLogic spleefLogic = new SpleefLogic(eventData);
+        String eventRaw = org.bukkit.ChatColor.stripColor(eventData.getEventType());
+
+        switch (eventRaw.toLowerCase()) {
+            case "quiz / question":
+                quizLogic.quizStart();
+                break;
+
+            case "dès à coudre":
+                dacLogic.dacStart();
+                break;
+
+            case "spleef":
+                player.sendMessage("§f§l[!] §fLancement du Spleef...");
+                break;
+
+
+            default:
+                player.sendMessage("§c§l[!] §7Type d'événement inconnu : " + eventRaw);
+                break;
         }
     }
-
-
-
     private void handleStop(Player player) {
         Map<String, Integer> scores = eventData.getGlobalScores();
 
@@ -138,6 +152,7 @@ public class ArchiEventCommand implements CommandExecutor {
         player.sendMessage("§8§m      §r §6§lArchiEvent §8§m      ");
         player.sendMessage("§e/archievent create §7- Configurer l'évent");
         player.sendMessage("§e/archievent start  §7- Lancer l'annonce");
+        player.sendMessage("§e/archievent question ( la question et le dernier mot doit etre la réponse");
         player.sendMessage("§e/archievent stop   §7- Finir et donner les lots");
         player.sendMessage("§e/archievent cancel §7- Tout stopper sans lots");
     }

@@ -1,11 +1,10 @@
 package fr.archipel.archiEvent;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 public class EventData {
 
@@ -33,8 +32,47 @@ public class EventData {
 
     // --- DONNÉES DE L'EVENT ---
     private String eventType;
+
+    // --- DONNÉES DU QUIZ ---
     private String currentQuestion;
     private String currentAnswer;
+
+    // --- DONNÉES DE DAS ---
+
+    // Dans EventData.java
+    private Location dacJumpPoint;
+    private Location poolPos1;
+    private Location poolPos2;
+    private Player currentDacPlayer; // Pour savoir qui est en train de sauter
+
+    private List<Player> dacPlayerOrder = new ArrayList<>();
+
+    public void setDacPlayerOrder(List<Player> dacPlayerOrder) {
+        this.dacPlayerOrder = dacPlayerOrder;
+    }
+
+    public void setDacJumpPoint(Location loc) { this.dacJumpPoint = loc; }
+    public Location getDacJumpPoint() { return dacJumpPoint; }
+
+    public void setPoolPos1(Location loc) { this.poolPos1 = loc; }
+    public void setPoolPos2(Location loc) { this.poolPos2 = loc; }
+    public Location getPoolPos1() { return poolPos1; }
+    public Location getPoolPos2() { return poolPos2; }
+
+    public Player getCurrentDacPlayer() { return currentDacPlayer; }
+    public void setCurrentDacPlayer(Player p) { this.currentDacPlayer = p; }
+
+
+
+
+
+
+
+
+
+
+
+
 
     // --- RÉCOMPENSES (Place -> Enum RewardType -> Quantité) ---
     private final Map<Integer, Map<RewardType, Integer>> rewards = new HashMap<>();
