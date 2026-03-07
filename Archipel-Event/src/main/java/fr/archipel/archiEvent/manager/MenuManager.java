@@ -14,38 +14,30 @@ import java.util.List;
 
 public class MenuManager {
 
-    // On transforme ça en méthode propre
     public void openCreationMenu(Player player) {
         player.sendMessage("§b[ArchiEvent] §fOuverture du sélecteur d'événement...");
 
-        // Un inventaire de 9 slots suffit largement ici
         Inventory gui = Bukkit.createInventory(null, 9, "§8Choisis ton événement");
 
-// --- ITEM: QUIZ ---
+        // QUIZ
         ItemStack quiz = new ItemStack(Material.BOOK);
         ItemMeta quizMeta = quiz.getItemMeta();
         if (quizMeta != null) {
             quizMeta.setDisplayName("§e§lQuiz / Question");
-            List<String> lore = new ArrayList<>();
-            lore.add("§7Mode: Questions dans le chat");
-            lore.add("§7Récompenses: Aux 3 plus rapides");
-            quizMeta.setLore(lore);
+            quizMeta.setLore(Arrays.asList("§7Mode: Questions dans le chat", "§7Récompenses: Aux 3 plus rapides"));
             quiz.setItemMeta(quizMeta);
         }
 
-// --- ITEM: SPLEEF ---
+        // SPLEEF
         ItemStack spleef = new ItemStack(Material.SNOW_BLOCK);
         ItemMeta spleefMeta = spleef.getItemMeta();
         if (spleefMeta != null) {
             spleefMeta.setDisplayName("§f§lSpleef");
-            List<String> lore = new ArrayList<>();
-            lore.add("§7Mode: Dernier debout sur la neige");
-            lore.add("§7Récompenses: Top 3 survivants");
-            spleefMeta.setLore(lore);
+            spleefMeta.setLore(Arrays.asList("§7Mode: Dernier debout sur la neige", "§7Récompenses: Top 3 survivants"));
             spleef.setItemMeta(spleefMeta);
         }
 
-        // --- ITEM 3: DAC ---
+        // DAC
         ItemStack dac = new ItemStack(Material.WATER_BUCKET);
         ItemMeta dacMeta = dac.getItemMeta();
         if (dacMeta != null) {
@@ -53,9 +45,21 @@ public class MenuManager {
             dac.setItemMeta(dacMeta);
         }
 
-        gui.setItem(2, quiz);
-        gui.setItem(4, spleef);
-        gui.setItem(6, dac);
+        // NEXUS
+        ItemStack nexus = new ItemStack(Material.END_CRYSTAL);
+        ItemMeta nexusMeta = nexus.getItemMeta();
+        if (nexusMeta != null) {
+            nexusMeta.setDisplayName("§5§lNexus");
+            nexusMeta.setLore(Arrays.asList(
+                    "§7Mode: 2 équipes, détruisez le Nexus adverse",
+                    "§7Récompenses: Toute la team gagnante"));
+            nexus.setItemMeta(nexusMeta);
+        }
+
+        gui.setItem(1, quiz);
+        gui.setItem(3, spleef);
+        gui.setItem(5, dac);
+        gui.setItem(7, nexus);
 
         player.openInventory(gui);
     }
@@ -65,22 +69,19 @@ public class MenuManager {
 
         for (int rank = 1; rank <= 3; rank++) {
             int startSlot = (rank - 1) * 9;
-
-            gui.setItem(startSlot, createItem(Material.PAPER, "§e§l" + rank + (rank == 1 ? "er" : "ème") + " Place", "§7Configure les lots à droite"));
+            gui.setItem(startSlot, createItem(Material.PAPER,
+                    "§e§l" + rank + (rank == 1 ? "er" : "ème") + " Place",
+                    "§7Configure les lots à droite"));
 
             EventData.RewardType[] types = EventData.RewardType.values();
             for (int j = 0; j < types.length; j++) {
                 EventData.RewardType type = types[j];
                 gui.setItem(startSlot + 2 + j, createItem(type.getGuiMaterial(), type.getDisplayName(),
-                        "§fQuantité : §b0",
-                        " ",
-                        "§7Clique gauche: §a+1",
-                        "§7Clique droit: §c-1"));
+                        "§fQuantité : §b0", " ", "§7Clique gauche: §a+1", "§7Clique droit: §c-1"));
             }
         }
 
         gui.setItem(26, createItem(Material.EMERALD_BLOCK, "§a§lVALIDER", "§7Enregistrer la config"));
-
         player.openInventory(gui);
     }
 

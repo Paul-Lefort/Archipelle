@@ -1,8 +1,12 @@
 package fr.archipel.archiEvent;
 
 import org.bukkit.Material;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class EventData {
 
@@ -30,15 +34,14 @@ public class EventData {
     private String eventType;
     private final Map<Integer, Map<RewardType, Integer>> rewards = new HashMap<>();
 
-    public void setEventType(String type) {
-        this.eventType = type;
-    }
+    // Inscriptions — uniquement utilisé pour les events qui le nécessitent (Nexus etc.)
+    private boolean registrationOpen = false;
+    private final List<UUID> registeredPlayers = new ArrayList<>();
 
-    public String getEventType() {
-        return eventType;
-    }
+    public void setEventType(String type) { this.eventType = type; }
+    public String getEventType() { return eventType; }
 
-    // --- GESTION DES RÉCOMPENSES (Commun à tous) ---
+    // --- RÉCOMPENSES ---
 
     public void setReward(int place, RewardType type, int amount) {
         rewards.computeIfAbsent(place, k -> new HashMap<>()).put(type, amount);
@@ -49,8 +52,32 @@ public class EventData {
         return rewards.get(place).getOrDefault(type, 0);
     }
 
+    // --- INSCRIPTIONS ---
+
+    public void openRegistration() { this.registrationOpen = true; }
+    public void closeRegistration() { this.registrationOpen = false; }
+    public boolean isRegistrationOpen() { return registrationOpen; }
+
+    public boolean register(UUID uuid) {
+        if (registeredPlayers.contains(uuid)) return false;
+        registeredPlayers.add(uuid);
+        return true;
+    }
+
+    public boolean unregister(UUID uuid) {
+        return registeredPlayers.remove(uuid);
+    }
+
+    public List<UUID> getRegisteredPlayers() { return registeredPlayers; }
+
+    public int getRegisteredCount() { return registeredPlayers.size(); }
+
+    // --- RESET ---
+
     public void reset() {
         rewards.clear();
         eventType = null;
+        registrationOpen = false;
+        registeredPlayers.clear();
     }
 }
