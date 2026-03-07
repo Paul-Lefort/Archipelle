@@ -1,15 +1,18 @@
 package fr.archipel.archiEvent.commands;
 
+import fr.archipel.archiEvent.ArchiEvent; // Assure-toi d'importer ta classe principale
 import fr.archipel.archiEvent.EventData;
-import fr.archipel.archiEvent.EventData.RewardType; // Import de l'Enum
+import fr.archipel.archiEvent.EventData.RewardType;
+import fr.archipel.archiEvent.games.quiz.QuizChatListener;
+import fr.archipel.archiEvent.games.quiz.QuizData;
 import fr.archipel.archiEvent.games.quiz.QuizLogic;
 import fr.archipel.archiEvent.manager.MenuManager;
 import org.bukkit.Bukkit;
-import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -18,13 +21,19 @@ import java.util.Map;
 
 public class ArchiEventCommand implements CommandExecutor {
 
+    private final ArchiEvent plugin; // Nécessaire pour registerEvents
     private final EventData eventData;
+    private final QuizData quizData;
     private final QuizLogic quizLogic;
 
-    public ArchiEventCommand(EventData eventData) {
+    // On stocke le listener ici pour pouvoir l'unregister plus tard
+    private QuizChatListener quizChatListener;
+
+    public ArchiEventCommand(ArchiEvent plugin, EventData eventData, QuizData quizData) {
+        this.plugin = plugin;
         this.eventData = eventData;
-        // INITIALISATION CRUCIALE :
-        this.quizLogic = new QuizLogic(eventData);
+        this.quizData = quizData;
+        this.quizLogic = new QuizLogic(eventData, quizData);
     }
 
     @Override
@@ -40,24 +49,12 @@ public class ArchiEventCommand implements CommandExecutor {
         }
 
         switch (args[0].toLowerCase()) {
-            case "create":
-                handleCreate(player);
-                break;
-            case "start":
-                handleStart(player);
-                break;
-            case "question":
-                quizLogic.handleQuestion(player, args);
-                break;
-            case "stop":
-                handleStop(player);
-                break;
-            case "cancel":
-                handleCancel(player);
-                break;
-            default:
-                sendHelp(player);
-                break;
+            case "create" -> handleCreate(player);
+            case "start" -> handleStart(player);
+            case "question" -> quizLogic.handleQuestion(player, args);
+            case "stop" -> handleStop(player);
+            case "cancel" -> handleCancel(player);
+            default -> sendHelp(player);
         }
         return true;
     }
@@ -74,23 +71,22 @@ public class ArchiEventCommand implements CommandExecutor {
         }
 
         if (eventData.getEventType().contains("Quiz")) {
-            QuizLogic quizLogic = new QuizLogic(eventData);
+            if (quizChatListener == null) {
+                quizChatListener = new QuizChatListener(eventData, quizData);
+                Bukkit.getPluginManager().registerEvents(quizChatListener, plugin);
+            }
             quizLogic.quizStart();
-        }
-        else if (eventData.getEventType().contains("Spleef")) {
+        } else if (eventData.getEventType().contains("Spleef")) {
             player.sendMessage("§f§l[!] §fL'événement Spleef est configuré.");
-            // Plus tard : SpleefLogic spleefLogic = new SpleefLogic(eventData);
         }
     }
 
-
-
     private void handleStop(Player player) {
-        Map<String, Integer> scores = eventData.getGlobalScores();
+        Map<String, Integer> scores = quizData.getGlobalScores();
 
         if (scores.isEmpty()) {
             player.sendMessage("§c§l[!] §7Aucun point marqué. Fermeture.");
-            eventData.setEventType(null);
+            cleanup();
             return;
         }
 
@@ -107,7 +103,6 @@ public class ArchiEventCommand implements CommandExecutor {
 
             Bukkit.broadcastMessage("§f    " + rank + ". §e" + playerName + " §7- §f" + points + " pts");
 
-            // DISTRIBUTION VIA ENUM
             for (RewardType type : RewardType.values()) {
                 int amount = eventData.getReward(rank, type);
                 if (amount > 0) {
@@ -118,9 +113,7 @@ public class ArchiEventCommand implements CommandExecutor {
         }
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
 
-        // Reset
-        eventData.setEventType(null);
-        eventData.reset();
+        cleanup();
     }
 
     private void handleCancel(Player player) {
@@ -128,10 +121,20 @@ public class ArchiEventCommand implements CommandExecutor {
             player.sendMessage("§c§l[!] §7Rien à annuler.");
             return;
         }
-        eventData.setEventType(null);
-        eventData.setAnswer(null);
-        eventData.reset();
+        cleanup();
         Bukkit.broadcastMessage("§c§l[ArchiEvent] §fL'événement a été §nannulé§f.");
+    }
+
+
+    private void cleanup() {
+        if (quizChatListener != null) {
+            HandlerList.unregisterAll(quizChatListener);
+            quizChatListener = null; // Important pour pouvoir le recréer au prochain start
+        }
+
+        eventData.setEventType(null);
+        eventData.reset();
+        quizData.reset();
     }
 
     private void sendHelp(Player player) {
