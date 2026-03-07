@@ -2,6 +2,7 @@ package fr.archipel.archiEvent.games.quiz;
 
 import fr.archipel.archiEvent.EventData;
 import fr.archipel.archiEvent.ArchiEvent;
+import fr.archipel.archiEvent.games.Game;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -9,9 +10,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class QuizLogic {
+public class QuizLogic implements Game {
 
     private final EventData eventData;
     private final QuizData quizData;
@@ -19,6 +22,25 @@ public class QuizLogic {
     public QuizLogic(EventData eventData, QuizData quizData) {
         this.eventData = eventData;
         this.quizData = quizData;
+    }
+
+    /**
+     * Retourne le classement final : trie les scores et retourne Map<NomJoueur, Place>.
+     * Appelé par /stop via ArchiEventCommand.
+     */
+    @Override
+    public Map<String, Integer> getRanking() {
+        Map<String, Integer> scores = quizData.getGlobalScores();
+        Map<String, Integer> ranking = new HashMap<>();
+
+        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(scores.entrySet());
+        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+        for (int i = 0; i < Math.min(3, sorted.size()); i++) {
+            ranking.put(sorted.get(i).getKey(), i + 1);
+        }
+
+        return ranking;
     }
 
     public void quizStart() {
@@ -34,7 +56,7 @@ public class QuizLogic {
         Bukkit.broadcastMessage("§7    1er - " + formatRewards(1));
         Bukkit.broadcastMessage("§7    2ème - " + formatRewards(2));
         Bukkit.broadcastMessage("§7    3ème - " + formatRewards(3));
-        Bukkit.broadcastMessage("§6§l§m--------------------------------------------");
+        Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
         Bukkit.broadcastMessage(" ");
 
         for (Player online : Bukkit.getOnlinePlayers()) {
@@ -42,19 +64,7 @@ public class QuizLogic {
         }
     }
 
-    private String formatRewards(int place) {
-        List<String> parts = new ArrayList<>();
-        for (EventData.RewardType type : EventData.RewardType.values()) {
-            int amount = eventData.getReward(place, type);
-            if (amount > 0) {
-                parts.add("§e" + amount + "x " + type.getDisplayName());
-            }
-        }
-        return parts.isEmpty() ? "§8Aucune" : String.join("§f, ", parts);
-    }
-
     public void handleQuestion(Player player, String[] args) {
-
         if (eventData.getEventType() == null || !eventData.getEventType().contains("Quiz")) {
             player.sendMessage("§c§l[!] §7Tu dois d'abord créer un événement Quiz.");
             return;
@@ -97,5 +107,16 @@ public class QuizLogic {
             quizData.clearQuestionWinners();
 
         }, 20L * 30);
+    }
+
+    private String formatRewards(int place) {
+        List<String> parts = new ArrayList<>();
+        for (EventData.RewardType type : EventData.RewardType.values()) {
+            int amount = eventData.getReward(place, type);
+            if (amount > 0) {
+                parts.add("§e" + amount + "x " + type.getDisplayName());
+            }
+        }
+        return parts.isEmpty() ? "§8Aucune" : String.join("§f, ", parts);
     }
 }
