@@ -29,6 +29,15 @@ public class QuizLogic implements Game {
      * Appelé par /stop via ArchiEventCommand.
      */
     @Override
+    public Map<String, String> getDisplayScores() {
+        Map<String, String> display = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : quizData.getGlobalScores().entrySet()) {
+            display.put(entry.getKey(), entry.getValue() + " pts");
+        }
+        return display;
+    }
+
+    @Override
     public Map<String, Integer> getRanking() {
         Map<String, Integer> scores = quizData.getGlobalScores();
         Map<String, Integer> ranking = new HashMap<>();

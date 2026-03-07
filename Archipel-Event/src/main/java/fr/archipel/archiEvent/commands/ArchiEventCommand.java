@@ -202,6 +202,8 @@ public class ArchiEventCommand implements CommandExecutor {
             return;
         }
 
+        Map<String, String> displayScores = currentGame.getDisplayScores();
+
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
         Bukkit.broadcastMessage("§e§l   CLASSEMENT FINAL : §f" + eventData.getEventType());
 
@@ -209,7 +211,9 @@ public class ArchiEventCommand implements CommandExecutor {
                 .sorted(Map.Entry.comparingByValue())
                 .forEach(entry -> {
                     String suffix = (entry.getValue() == 1) ? "er" : "ème";
-                    Bukkit.broadcastMessage("§f    " + entry.getValue() + suffix + " §e" + entry.getKey());
+                    String score = displayScores.getOrDefault(entry.getKey(), "");
+                    String scorePart = score.isEmpty() ? "" : " §7- §f" + score;
+                    Bukkit.broadcastMessage("§f    " + entry.getValue() + suffix + " §e" + entry.getKey() + scorePart);
                 });
 
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
