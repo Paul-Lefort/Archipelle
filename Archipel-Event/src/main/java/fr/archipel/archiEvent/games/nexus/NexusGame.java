@@ -263,6 +263,17 @@ public class NexusGame implements Game {
         return ranking;
     }
 
+    @Override
+    public Map<String, String> getDisplayScores() {
+        Map<String, String> display = new HashMap<>();
+        for (Map.Entry<UUID, Double> entry : nexusData.getDamageDealt().entrySet()) {
+            Player p = Bukkit.getPlayer(entry.getKey());
+            String name = p != null ? p.getName() : Bukkit.getOfflinePlayer(entry.getKey()).getName();
+            if (name != null) display.put(name, String.format("%.0f", entry.getValue()) + " dégâts");
+        }
+        return display;
+    }
+
     private NexusTeam determineWinner() {
         if (nexusData.getRedCrystalHp() <= 0) return nexusData.getTeamBlue();
         if (nexusData.getBlueCrystalHp() <= 0) return nexusData.getTeamRed();
