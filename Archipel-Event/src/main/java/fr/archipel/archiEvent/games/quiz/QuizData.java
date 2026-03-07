@@ -1,18 +1,17 @@
 package fr.archipel.archiEvent.games.quiz;
 
-import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class QuizData {
 
     private String currentQuestion;
     private String currentAnswer;
 
-    // --- SCORES ET GAGNANTS SPÉCIFIQUES AU QUIZ ---
-    private final List<Player> currentQuestionWinners = new ArrayList<>();
+    private final List<UUID> currentQuestionWinners = new ArrayList<>();
     private final Map<String, Integer> globalScores = new HashMap<>();
 
     public void setQuestion(String question) {
@@ -31,9 +30,7 @@ public class QuizData {
         return currentAnswer;
     }
 
-    // --- LOGIQUE Quiz / Question ---
-
-    public List<Player> getCurrentQuestionWinners() {
+    public List<UUID> getCurrentQuestionWinners() {
         return currentQuestionWinners;
     }
 
