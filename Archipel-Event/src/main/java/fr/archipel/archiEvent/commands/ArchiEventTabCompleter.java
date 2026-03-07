@@ -35,6 +35,9 @@ public class ArchiEventTabCompleter implements TabCompleter {
             } else if (type.contains("Quiz")) {
                 suggestions = List.of("create", "question", "start", "stop", "cancel");
 
+            } else if (type.contains("Dès") || type.contains("DAC")) {
+                suggestions = List.of("create", "setpool", "setjump", "open", "participe", "quitter", "start", "test", "stop", "cancel");
+
             } else if (type.contains("Nexus")) {
                 suggestions = List.of("create", "setnexus", "open", "participe", "quitter", "start", "test", "stop", "cancel");
 
@@ -47,6 +50,10 @@ public class ArchiEventTabCompleter implements TabCompleter {
 
         if (args.length == 2 && args[0].equalsIgnoreCase("setnexus")) {
             return filter(List.of("rouge", "bleu"), args[1]);
+        }
+
+        if (args.length == 2 && args[0].equalsIgnoreCase("setpool")) {
+            return filter(List.of("1", "2"), args[1]);
         }
 
         return List.of();

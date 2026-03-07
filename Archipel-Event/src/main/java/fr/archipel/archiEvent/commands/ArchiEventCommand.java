@@ -3,6 +3,9 @@ package fr.archipel.archiEvent.commands;
 import fr.archipel.archiEvent.ArchiEvent;
 import fr.archipel.archiEvent.EventData;
 import fr.archipel.archiEvent.games.Game;
+import fr.archipel.archiEvent.games.dac.DACData;
+import fr.archipel.archiEvent.games.dac.DACGame;
+import fr.archipel.archiEvent.games.dac.DACListener;
 import fr.archipel.archiEvent.games.nexus.NexusData;
 import fr.archipel.archiEvent.games.nexus.NexusGame;
 import fr.archipel.archiEvent.games.nexus.NexusListener;
@@ -21,7 +24,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class ArchiEventCommand implements CommandExecutor {
 
@@ -29,29 +36,40 @@ public class ArchiEventCommand implements CommandExecutor {
     private final EventData eventData;
     private final QuizData quizData;
     private final NexusData nexusData;
+    private final DACData dacData;
     private final QuizLogic quizLogic;
     private final NexusGame nexusGame;
+    private final DACGame dacGame;
     private final MenuManager menuManager;
     private final RewardManager rewardManager;
 
     private Game currentGame;
     private QuizChatListener quizChatListener;
     private NexusListener nexusListener;
+    private DACListener dacListener;
     private BukkitTask registrationReminderTask;
 
-    public ArchiEventCommand(ArchiEvent plugin, EventData eventData, QuizData quizData, NexusData nexusData) {
+    public ArchiEventCommand(ArchiEvent plugin, EventData eventData, QuizData quizData, NexusData nexusData, DACData dacData) {
         this.plugin = plugin;
         this.eventData = eventData;
         this.quizData = quizData;
         this.nexusData = nexusData;
+        this.dacData = dacData;
         this.quizLogic = new QuizLogic(eventData, quizData);
         this.nexusGame = new NexusGame(eventData, nexusData);
+        this.dacGame = new DACGame(eventData, dacData);
         this.menuManager = new MenuManager();
         this.rewardManager = new RewardManager(eventData);
 
         this.nexusGame.setOnGameEnd(() -> {
             nexusGame.broadcastDamageRanking();
             Map<String, Integer> ranking = nexusGame.getRanking();
+            if (!ranking.isEmpty()) rewardManager.distributeRewards(ranking);
+            cleanup();
+        });
+
+        this.dacGame.setOnGameEnd(() -> {
+            Map<String, Integer> ranking = dacGame.getRanking();
             if (!ranking.isEmpty()) rewardManager.distributeRewards(ranking);
             cleanup();
         });
@@ -78,6 +96,8 @@ public class ArchiEventCommand implements CommandExecutor {
             case "test"      -> handleStart(player, true);
             case "question"  -> quizLogic.handleQuestion(player, args);
             case "setnexus"  -> handleSetNexus(player, args);
+            case "setpool"   -> handleSetPool(player, args);
+            case "setjump"   -> handleSetJump(player);
             case "stop"      -> handleStop(player);
             case "cancel"    -> handleCancel(player);
             default          -> sendHelp(player);
@@ -171,6 +191,38 @@ public class ArchiEventCommand implements CommandExecutor {
             currentGame = quizLogic;
             quizLogic.quizStart();
 
+        } else if (eventData.getEventType().contains("Dès") || eventData.getEventType().contains("DAC")) {
+            if (!dacData.isPoolDefined()) {
+                player.sendMessage("§c§l[!] §7Définis la zone de plongeon d'abord :");
+                player.sendMessage("§e/archievent setpool 1 §7- premier coin");
+                player.sendMessage("§e/archievent setpool 2 §7- deuxième coin");
+                return;
+            }
+            if (!dacData.isJumpDefined()) {
+                player.sendMessage("§c§l[!] §7Définis le point de saut avec §e/archievent setjump");
+                return;
+            }
+            if (!testMode && eventData.getRegisteredCount() < 2) {
+                player.sendMessage("§c§l[!] §7Il faut au moins 2 joueurs inscrits pour démarrer.");
+                return;
+            }
+
+            List<UUID> players = new ArrayList<>(eventData.getRegisteredPlayers());
+            if (testMode) {
+                if (!players.contains(player.getUniqueId())) players.add(player.getUniqueId());
+                player.sendMessage("§e§l[TEST] §7Mode test activé.");
+            }
+            Collections.shuffle(players);
+            eventData.closeRegistration();
+
+            if (dacListener == null) {
+                dacListener = new DACListener(dacData, dacGame);
+                Bukkit.getPluginManager().registerEvents(dacListener, plugin);
+                dacGame.setDACListener(dacListener);
+            }
+            currentGame = dacGame;
+            dacGame.start(players);
+
         } else if (eventData.getEventType().contains("Nexus")) {
             if (!nexusData.areBothLocationsSet()) {
                 player.sendMessage("§c§l[!] §7Tu dois d'abord définir les deux Nexus :");
@@ -229,6 +281,38 @@ public class ArchiEventCommand implements CommandExecutor {
             }
             default -> player.sendMessage("§cUsage: /archievent setnexus <rouge|bleu>");
         }
+    }
+
+    private void handleSetPool(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage("§cUsage: /archievent setpool <1|2>");
+            return;
+        }
+        Location loc = new Location(player.getWorld(),
+                player.getLocation().getBlockX() + 0.5,
+                player.getLocation().getBlockY(),
+                player.getLocation().getBlockZ() + 0.5);
+
+        switch (args[1]) {
+            case "1" -> {
+                dacData.setPoolPos1(loc);
+                player.sendMessage("§b§l[DAC] §fCoin 1 positionné en "
+                        + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
+            }
+            case "2" -> {
+                dacData.setPoolPos2(loc);
+                player.sendMessage("§b§l[DAC] §fCoin 2 positionné en "
+                        + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
+            }
+            default -> player.sendMessage("§cUsage: /archievent setpool <1|2>");
+        }
+    }
+
+    private void handleSetJump(Player player) {
+        Location loc = player.getLocation();
+        dacData.setJumpLocation(loc);
+        player.sendMessage("§b§l[DAC] §fPoint de saut positionné en "
+                + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
     }
 
     private void handleStop(Player player) {
@@ -299,12 +383,17 @@ public class ArchiEventCommand implements CommandExecutor {
             HandlerList.unregisterAll(nexusListener);
             nexusListener = null;
         }
+        if (dacListener != null) {
+            HandlerList.unregisterAll(dacListener);
+            dacListener = null;
+        }
         nexusGame.clearHolograms();
         nexusGame.clearScoreboard();
         currentGame = null;
         eventData.reset();
         quizData.reset();
         nexusData.reset();
+        dacData.reset();
     }
 
     private void sendHelp(Player player) {
