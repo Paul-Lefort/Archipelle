@@ -1,11 +1,11 @@
 package fr.archipel.archiEvent.commands;
 
 import fr.archipel.archiEvent.EventData;
-import fr.archipel.archiEvent.EventData.RewardType; // Import de l'Enum
+import fr.archipel.archiEvent.EventData.RewardType;
+import fr.archipel.archiEvent.games.quiz.QuizData;
 import fr.archipel.archiEvent.games.quiz.QuizLogic;
 import fr.archipel.archiEvent.manager.MenuManager;
 import org.bukkit.Bukkit;
-import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -19,12 +19,14 @@ import java.util.Map;
 public class ArchiEventCommand implements CommandExecutor {
 
     private final EventData eventData;
+    private final QuizData quizData; // On stocke l'instance pour les scores
     private final QuizLogic quizLogic;
 
-    public ArchiEventCommand(EventData eventData) {
+    public ArchiEventCommand(EventData eventData, QuizData quizData) {
         this.eventData = eventData;
-        // INITIALISATION CRUCIALE :
-        this.quizLogic = new QuizLogic(eventData);
+        this.quizData = quizData;
+        // On passe les deux instances à QuizLogic comme prévu
+        this.quizLogic = new QuizLogic(eventData, quizData);
     }
 
     @Override
@@ -74,23 +76,21 @@ public class ArchiEventCommand implements CommandExecutor {
         }
 
         if (eventData.getEventType().contains("Quiz")) {
-            QuizLogic quizLogic = new QuizLogic(eventData);
+            // Utilisation de l'instance déjà créée au lieu d'en recréer une
             quizLogic.quizStart();
-        }
-        else if (eventData.getEventType().contains("Spleef")) {
+        } else if (eventData.getEventType().contains("Spleef")) {
             player.sendMessage("§f§l[!] §fL'événement Spleef est configuré.");
-            // Plus tard : SpleefLogic spleefLogic = new SpleefLogic(eventData);
         }
     }
 
-
-
     private void handleStop(Player player) {
-        Map<String, Integer> scores = eventData.getGlobalScores();
+        // RÉCUPÉRATION DES SCORES VIA QUIZDATA
+        Map<String, Integer> scores = quizData.getGlobalScores();
 
         if (scores.isEmpty()) {
             player.sendMessage("§c§l[!] §7Aucun point marqué. Fermeture.");
             eventData.setEventType(null);
+            quizData.reset(); // Reset du quiz
             return;
         }
 
@@ -107,7 +107,6 @@ public class ArchiEventCommand implements CommandExecutor {
 
             Bukkit.broadcastMessage("§f    " + rank + ". §e" + playerName + " §7- §f" + points + " pts");
 
-            // DISTRIBUTION VIA ENUM
             for (RewardType type : RewardType.values()) {
                 int amount = eventData.getReward(rank, type);
                 if (amount > 0) {
@@ -118,9 +117,10 @@ public class ArchiEventCommand implements CommandExecutor {
         }
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
 
-        // Reset
+        // Reset global
         eventData.setEventType(null);
         eventData.reset();
+        quizData.reset(); // On n'oublie pas de reset le quiz
     }
 
     private void handleCancel(Player player) {
@@ -129,8 +129,9 @@ public class ArchiEventCommand implements CommandExecutor {
             return;
         }
         eventData.setEventType(null);
-        eventData.setAnswer(null);
         eventData.reset();
+        quizData.reset(); // Reset la question, la réponse et les scores
+
         Bukkit.broadcastMessage("§c§l[ArchiEvent] §fL'événement a été §nannulé§f.");
     }
 

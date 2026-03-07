@@ -3,22 +3,30 @@ package fr.archipel.archiEvent;
 import fr.archipel.archiEvent.commands.ArchiEventCommand;
 import fr.archipel.archiEvent.listeners.MenuListener;
 import fr.archipel.archiEvent.games.quiz.QuizChatListener;
+import fr.archipel.archiEvent.games.quiz.QuizData; // Import du nouveau module
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class ArchiEvent extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // 1. On crée l'objet qui va stocker les données de l'event
+        // 1. On crée les deux objets de stockage
+        // EventData : Pour les récompenses communes
         EventData eventData = new EventData();
+        // QuizData : Pour la logique spécifique au Quiz (questions/scores)
+        QuizData quizData = new QuizData();
 
-        // 2. On donne cet objet à la commande
-        getCommand("archievent").setExecutor(new ArchiEventCommand(eventData));
+        // 2. On donne les DEUX objets à la commande
+        // (Il faudra sûrement mettre à jour le constructeur de ArchiEventCommand)
+        getCommand("archievent").setExecutor(new ArchiEventCommand(eventData, quizData));
 
-        // 3. On donne le MÊME objet au listener (très important pour que les menus enregistrent dedans)
+        // 3. On enregistre les listeners
+        // Le MenuListener n'a besoin que d'EventData (pour régler les récompenses)
         getServer().getPluginManager().registerEvents(new MenuListener(eventData), this);
-        getServer().getPluginManager().registerEvents(new QuizChatListener(eventData), this);
 
-        getLogger().info("ArchiEvent active ! Prepret a mener la danse.");
+        // Le QuizChatListener a besoin des deux (Rewards + Logique Quiz)
+        getServer().getPluginManager().registerEvents(new QuizChatListener(eventData, quizData), this);
+
+        getLogger().info("ArchiEvent active ! Prêt à mener la danse.");
     }
 }

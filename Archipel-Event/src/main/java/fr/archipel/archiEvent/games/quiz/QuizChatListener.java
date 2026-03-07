@@ -11,22 +11,26 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 public class QuizChatListener implements Listener {
 
     private final EventData eventData;
+    private final QuizData quizData; // Ajout du conteneur spécifique
 
-    public QuizChatListener(EventData eventData) {
+    public QuizChatListener(EventData eventData, QuizData quizData) {
         this.eventData = eventData;
+        this.quizData = quizData; // AVANT : this.quizData = this.quizData; (Erreur !)
     }
 
     @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
-
-        if (eventData.getAnswer() == null) return;
+        // On vérifie la réponse dans QuizData
+        if (quizData.getAnswer() == null) return;
 
         Player player = event.getPlayer();
         String message = event.getMessage();
 
-        if (message.equalsIgnoreCase(eventData.getAnswer())) {
+        // Comparaison avec la réponse stockée dans QuizData
+        if (message.equalsIgnoreCase(quizData.getAnswer())) {
 
-            if (eventData.getCurrentQuestionWinners().contains(player)) {
+            // Vérification si le joueur a déjà gagné ce round via QuizData
+            if (quizData.getCurrentQuestionWinners().contains(player)) {
                 event.setCancelled(true);
                 player.sendMessage("§c§l[!] §7Tu as déjà trouvé la réponse pour cette question !");
                 return;
@@ -34,26 +38,30 @@ public class QuizChatListener implements Listener {
 
             event.setCancelled(true);
 
-            eventData.getCurrentQuestionWinners().add(player);
+            // Ajout du gagnant dans QuizData
+            quizData.getCurrentQuestionWinners().add(player);
 
-            int position = eventData.getCurrentQuestionWinners().size();
+            int position = quizData.getCurrentQuestionWinners().size();
             int points = (position == 1) ? 5 : (position == 2) ? 3 : (position == 3) ? 2 : 0;
 
             if (points > 0) {
                 int finalPoints = points;
 
-                // On repasse sur le thread principal pour les messages et sons
+                // On repasse sur le thread principal pour Bukkit
                 Bukkit.getScheduler().runTask(Bukkit.getPluginManager().getPlugin("ArchiEvent"), () -> {
 
-                    eventData.addPoints(player.getName(), finalPoints);
+                    // Ajout des points globaux dans QuizData
+                    quizData.addPoints(player.getName(), finalPoints);
 
                     String suffix = (position == 1) ? "er" : "ème";
                     Bukkit.broadcastMessage("§a§l[ArchiEvent] §e" + player.getName() + " §f- " + position + suffix + " ! §7(+ " + finalPoints + " pts)");
                     player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
 
-                    if (eventData.getCurrentQuestionWinners().size() >= 3) {
+                    // Si le podium (3 places) est complet
+                    if (quizData.getCurrentQuestionWinners().size() >= 3) {
 
-                        eventData.setAnswer(null);
+                        // On ferme la question dans QuizData
+                        quizData.setAnswer(null);
 
                         Bukkit.broadcastMessage("§6§l[ArchiEvent] §fPodium complet ! Fin de la question.");
 
