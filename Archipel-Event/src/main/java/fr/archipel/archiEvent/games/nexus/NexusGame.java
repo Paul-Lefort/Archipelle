@@ -24,6 +24,7 @@ public class NexusGame implements Game {
     private Objective objective;
     private ArmorStand holoRed;
     private ArmorStand holoBlue;
+    private boolean gameEnded = false;
 
     public NexusGame(EventData eventData, NexusData nexusData) {
         this.eventData = eventData;
@@ -186,6 +187,10 @@ public class NexusGame implements Game {
     // --- FIN DE PARTIE ---
 
     public void onCrystalDestroyed(NexusTeam winner, NexusTeam loser) {
+        // Empêcher le double appel au même tick
+        if (gameEnded) return;
+        gameEnded = true;
+
         // Supprimer le cristal détruit
         if (loser.getCrystal() != null && !loser.getCrystal().isDead()) {
             loser.getCrystal().remove();
@@ -235,6 +240,7 @@ public class NexusGame implements Game {
         if (holoBlue != null && !holoBlue.isDead()) holoBlue.remove();
         holoRed = null;
         holoBlue = null;
+        gameEnded = false;
     }
 
     public void clearScoreboard() {
@@ -254,11 +260,19 @@ public class NexusGame implements Game {
         NexusTeam winner = determineWinner();
         if (winner == null) return new HashMap<>();
 
+        NexusTeam loser = nexusData.getOpponentTeam(winner);
         Map<String, Integer> ranking = new HashMap<>();
+
+        // Gagnants → place 1, Perdants → place 2
         for (UUID uuid : winner.getMembers()) {
             Player p = Bukkit.getPlayer(uuid);
             String name = p != null ? p.getName() : Bukkit.getOfflinePlayer(uuid).getName();
             if (name != null) ranking.put(name, 1);
+        }
+        for (UUID uuid : loser.getMembers()) {
+            Player p = Bukkit.getPlayer(uuid);
+            String name = p != null ? p.getName() : Bukkit.getOfflinePlayer(uuid).getName();
+            if (name != null) ranking.put(name, 2);
         }
         return ranking;
     }

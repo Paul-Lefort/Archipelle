@@ -14,6 +14,7 @@ import fr.archipel.archiEvent.manager.RewardManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -36,6 +37,7 @@ public class ArchiEventCommand implements CommandExecutor {
     private Game currentGame;
     private QuizChatListener quizChatListener;
     private NexusListener nexusListener;
+    private BukkitTask registrationReminderTask;
 
     public ArchiEventCommand(ArchiEvent plugin, EventData eventData, QuizData quizData, NexusData nexusData) {
         this.plugin = plugin;
@@ -71,7 +73,9 @@ public class ArchiEventCommand implements CommandExecutor {
             case "create"    -> menuManager.openCreationMenu(player);
             case "open"      -> handleOpen(player);
             case "participe" -> handleParticipe(player);
-            case "start"     -> handleStart(player);
+            case "quitter"   -> handleQuitter(player);
+            case "start"     -> handleStart(player, false);
+            case "test"      -> handleStart(player, true);
             case "question"  -> quizLogic.handleQuestion(player, args);
             case "setnexus"  -> handleSetNexus(player, args);
             case "stop"      -> handleStop(player);
@@ -102,6 +106,18 @@ public class ArchiEventCommand implements CommandExecutor {
         Bukkit.broadcastMessage("§f   Tape §a/archievent participe §fpour rejoindre !");
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
         Bukkit.broadcastMessage(" ");
+
+        // Reminder toutes les 5 minutes tant que les inscriptions sont ouvertes
+        long fiveMinutes = 20L * 60 * 5;
+        registrationReminderTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (!eventData.isRegistrationOpen()) {
+                registrationReminderTask.cancel();
+                return;
+            }
+            Bukkit.broadcastMessage("§6§l[ArchiEvent] §f" + eventData.getRegisteredCount()
+                    + " joueur(s) inscrit(s) pour §e" + eventData.getEventType()
+                    + "§f ! Tape §a/archievent participe §fpour rejoindre !");
+        }, fiveMinutes, fiveMinutes);
     }
 
     // Inscription d'un joueur — accessible à tous
@@ -123,7 +139,25 @@ public class ArchiEventCommand implements CommandExecutor {
         }
     }
 
-    private void handleStart(Player player) {
+    private void handleQuitter(Player player) {
+        if (!eventData.isRegistrationOpen()) {
+            player.sendMessage("§c§l[!] §7Les inscriptions ne sont pas ouvertes.");
+            return;
+        }
+
+        boolean removed = eventData.unregister(player.getUniqueId());
+
+        if (removed) {
+            player.sendMessage("§c§l[ArchiEvent] §fTu t'es désinscrit(e). ("
+                    + eventData.getRegisteredCount() + " participants restants)");
+            Bukkit.broadcastMessage("§c[ArchiEvent] §e" + player.getName()
+                    + " §fs'est désinscrit(e). §7(" + eventData.getRegisteredCount() + " participants)");
+        } else {
+            player.sendMessage("§c§l[!] §7Tu n'es pas inscrit(e).");
+        }
+    }
+
+    private void handleStart(Player player, boolean testMode) {
         if (eventData.getEventType() == null) {
             player.sendMessage("§c§l[!] §7Configure l'évent avec /archievent create.");
             return;
@@ -144,12 +178,19 @@ public class ArchiEventCommand implements CommandExecutor {
                 player.sendMessage("§e/archievent setnexus bleu  §7- spawn à ta position");
                 return;
             }
-            if (eventData.getRegisteredCount() < 2) {
+
+            if (!testMode && eventData.getRegisteredCount() < 2) {
                 player.sendMessage("§c§l[!] §7Il faut au moins 2 joueurs inscrits pour démarrer.");
+                player.sendMessage("§7(utilise §e/archievent test §7pour ignorer cette vérification)");
                 return;
             }
 
-            // Fermer les inscriptions au démarrage
+            // En mode test, inscrire automatiquement le joueur qui lance
+            if (testMode) {
+                eventData.register(player.getUniqueId());
+                player.sendMessage("§e§l[TEST] §7Mode test activé — inscriptions ignorées.");
+            }
+
             eventData.closeRegistration();
 
             if (nexusListener == null) {
@@ -167,7 +208,13 @@ public class ArchiEventCommand implements CommandExecutor {
             return;
         }
 
-        Location loc = player.getLocation();
+        // Centrer proprement sur le bloc (entier + 0.5)
+        Location loc = new Location(
+                player.getWorld(),
+                player.getLocation().getBlockX() + 0.5,
+                player.getLocation().getBlockY(),
+                player.getLocation().getBlockZ() + 0.5
+        );
 
         switch (args[1].toLowerCase()) {
             case "rouge" -> {
@@ -202,14 +249,26 @@ public class ArchiEventCommand implements CommandExecutor {
             return;
         }
 
+        Map<String, String> displayScores = currentGame.getDisplayScores();
+
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
         Bukkit.broadcastMessage("§e§l   CLASSEMENT FINAL : §f" + eventData.getEventType());
+
+        boolean isTeamMode = eventData.getRewardMode() == EventData.RewardMode.TEAM;
 
         ranking.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue())
                 .forEach(entry -> {
-                    String suffix = (entry.getValue() == 1) ? "er" : "ème";
-                    Bukkit.broadcastMessage("§f    " + entry.getValue() + suffix + " §e" + entry.getKey());
+                    String label;
+                    if (isTeamMode) {
+                        label = entry.getValue() == 1 ? "§6§l🏆 Gagnant" : "§7§l😔 Perdant";
+                    } else {
+                        String suffix = (entry.getValue() == 1) ? "er" : "ème";
+                        label = "§f" + entry.getValue() + suffix;
+                    }
+                    String score = displayScores.getOrDefault(entry.getKey(), "");
+                    String scorePart = score.isEmpty() ? "" : " §7- §f" + score;
+                    Bukkit.broadcastMessage("§f    " + label + " §e" + entry.getKey() + scorePart);
                 });
 
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
@@ -227,7 +286,11 @@ public class ArchiEventCommand implements CommandExecutor {
         Bukkit.broadcastMessage("§c§l[ArchiEvent] §fL'événement a été §nannulé§f.");
     }
 
-    private void cleanup() {
+    public void cleanup() {
+        if (registrationReminderTask != null) {
+            registrationReminderTask.cancel();
+            registrationReminderTask = null;
+        }
         if (quizChatListener != null) {
             HandlerList.unregisterAll(quizChatListener);
             quizChatListener = null;
@@ -249,6 +312,7 @@ public class ArchiEventCommand implements CommandExecutor {
         player.sendMessage("§e/archievent create                §7- Configurer l'évent");
         player.sendMessage("§e/archievent open                  §7- Ouvrir les inscriptions");
         player.sendMessage("§e/archievent participe             §7- S'inscrire à l'évent");
+        player.sendMessage("§e/archievent quitter               §7- Se désinscrire de l'évent");
         player.sendMessage("§e/archievent start                 §7- Lancer l'évent");
         player.sendMessage("§e/archievent setnexus <rouge|bleu> §7- Poser un Nexus");
         player.sendMessage("§e/archievent stop                  §7- Finir et donner les lots");
