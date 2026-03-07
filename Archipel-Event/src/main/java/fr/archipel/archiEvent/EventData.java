@@ -41,7 +41,18 @@ public class EventData {
     public void setEventType(String type) { this.eventType = type; }
     public String getEventType() { return eventType; }
 
+    // --- MODE RÉCOMPENSES ---
+
+    public enum RewardMode { TOP3, TEAM }
+
+    private RewardMode rewardMode = RewardMode.TOP3;
+
+    public void setRewardMode(RewardMode mode) { this.rewardMode = mode; }
+    public RewardMode getRewardMode() { return rewardMode; }
+
     // --- RÉCOMPENSES ---
+    // TOP3 : clé = 1, 2, 3 (place)
+    // TEAM : clé = 1 (gagnant), 2 (perdant)
 
     public void setReward(int place, RewardType type, int amount) {
         rewards.computeIfAbsent(place, k -> new HashMap<>()).put(type, amount);
@@ -77,6 +88,7 @@ public class EventData {
     public void reset() {
         rewards.clear();
         eventType = null;
+        rewardMode = RewardMode.TOP3;
         registrationOpen = false;
         registeredPlayers.clear();
     }

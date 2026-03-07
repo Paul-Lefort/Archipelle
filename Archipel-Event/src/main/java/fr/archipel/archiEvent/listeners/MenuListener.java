@@ -1,8 +1,9 @@
 package fr.archipel.archiEvent.listeners;
 
 import fr.archipel.archiEvent.EventData;
-import fr.archipel.archiEvent.EventData.RewardType; // On importe l'Enum
-import fr.archipel.archiEvent.manager.MenuManager; // Assure-toi que c'est le bon nom
+import fr.archipel.archiEvent.EventData.RewardMode;
+import fr.archipel.archiEvent.EventData.RewardType;
+import fr.archipel.archiEvent.manager.MenuManager;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -30,19 +31,28 @@ public class MenuListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         String title = event.getView().getTitle();
 
-        // --- GESTION DU PREMIER MENU ---
-        if (title.equals("§8Choisis ton événement")) {
+        // --- SÉLECTION DE L'EVENT ---
+        if (title.equals(MenuManager.TITLE_EVENT_SELECT)) {
             event.setCancelled(true);
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null || clicked.getType() == Material.AIR) return;
 
-            currentEvent.setEventType(clicked.getItemMeta().getDisplayName());
-            menuManager.openRewardsMenu(player);
+            String eventType = clicked.getItemMeta().getDisplayName();
+            currentEvent.setEventType(eventType);
+
+            // Ouvrir le bon menu selon le type d'event
+            if (eventType.contains("Nexus")) {
+                currentEvent.setRewardMode(RewardMode.TEAM);
+                menuManager.openRewardsMenuTeam(player);
+            } else {
+                currentEvent.setRewardMode(RewardMode.TOP3);
+                menuManager.openRewardsMenuTop3(player);
+            }
             return;
         }
 
-        // --- GESTION DU DEUXIÈME MENU ---
-        if (title.equals("§8Configuration des Récompenses")) {
+        // --- MENU TOP 3 ---
+        if (title.equals(MenuManager.TITLE_REWARDS_TOP3)) {
             event.setCancelled(true);
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null || clicked.getType() == Material.AIR) return;
@@ -50,20 +60,15 @@ public class MenuListener implements Listener {
             int slot = event.getRawSlot();
             Inventory inv = event.getInventory();
 
-            // --- VALIDATION (SLOT 26) ---
             if (slot == 26) {
+                // Validation — lire les 3 lignes (places 1, 2, 3)
                 for (int rank = 1; rank <= 3; rank++) {
                     int startSlot = (rank - 1) * 9;
-
                     RewardType[] types = RewardType.values();
                     for (int j = 0; j < types.length; j++) {
-                        int targetSlot = startSlot + 2 + j;
-                        ItemStack item = inv.getItem(targetSlot);
-
+                        ItemStack item = inv.getItem(startSlot + 2 + j);
                         if (item != null && item.hasItemMeta()) {
-                            int count = getCountFromLore(item);
-                            // CORRECTIF : On passe directement l'Enum 'types[j]'
-                            currentEvent.setReward(rank, types[j], count);
+                            currentEvent.setReward(rank, types[j], getCountFromLore(item));
                         }
                     }
                 }
@@ -72,17 +77,47 @@ public class MenuListener implements Listener {
                 return;
             }
 
-            // --- CLIC SUR UNE CLÉ (+ / -) ---
-            for (RewardType type : RewardType.values()) {
-                if (clicked.getType() == type.getGuiMaterial()) {
-                    boolean isAdd = (event.getClick() == ClickType.LEFT);
-                    boolean isRemove = (event.getClick() == ClickType.RIGHT);
+            handleKeyClick(event, clicked);
+        }
 
-                    if (isAdd || isRemove) {
-                        updateKeyCount(clicked, isAdd, type.getGuiMaterial());
+        // --- MENU GAGNANT/PERDANT ---
+        if (title.equals(MenuManager.TITLE_REWARDS_TEAM)) {
+            event.setCancelled(true);
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
+
+            int slot = event.getRawSlot();
+            Inventory inv = event.getInventory();
+
+            if (slot == 17) {
+                // Validation — ligne 0 = gagnant (place 1), ligne 1 = perdant (place 2)
+                RewardType[] types = RewardType.values();
+                for (int j = 0; j < types.length; j++) {
+                    ItemStack winner = inv.getItem(2 + j);
+                    if (winner != null && winner.hasItemMeta()) {
+                        currentEvent.setReward(1, types[j], getCountFromLore(winner));
                     }
-                    break;
+                    ItemStack loser = inv.getItem(11 + j);
+                    if (loser != null && loser.hasItemMeta()) {
+                        currentEvent.setReward(2, types[j], getCountFromLore(loser));
+                    }
                 }
+                player.sendMessage("§a§l[ArchiEvent] §fConfiguration enregistrée !");
+                player.closeInventory();
+                return;
+            }
+
+            handleKeyClick(event, clicked);
+        }
+    }
+
+    private void handleKeyClick(InventoryClickEvent event, ItemStack clicked) {
+        for (RewardType type : RewardType.values()) {
+            if (clicked.getType() == type.getGuiMaterial()) {
+                boolean isAdd = (event.getClick() == ClickType.LEFT);
+                boolean isRemove = (event.getClick() == ClickType.RIGHT);
+                if (isAdd || isRemove) updateKeyCount(clicked, isAdd, type.getGuiMaterial());
+                break;
             }
         }
     }
@@ -93,7 +128,6 @@ public class MenuListener implements Listener {
 
         List<String> lore = meta.getLore();
         int count = 0;
-
         if (lore != null && !lore.isEmpty()) {
             String digits = lore.get(0).replaceAll("[^0-9]", "");
             count = digits.isEmpty() ? 0 : Integer.parseInt(digits);
@@ -109,7 +143,6 @@ public class MenuListener implements Listener {
         newLore.add("§7Clique droit: §c-1");
         meta.setLore(newLore);
         item.setItemMeta(meta);
-
         item.setType(originalMaterial);
     }
 
