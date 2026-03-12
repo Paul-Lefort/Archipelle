@@ -11,10 +11,16 @@ import java.util.UUID;
 public class EventData {
 
     public enum RewardType {
-        LEGENDAIRE("§6Légendaire", "legendaire", Material.GOLD_NUGGET),
-        SPAWNERS("§aSpawners", "spawners", Material.SPAWNER),
-        QUANTIQUE("§bQuantique", "quantique", Material.NETHER_STAR),
-        ANTIQUE("§dAntique", "antique", Material.ECHO_SHARD);
+        LEGENDAIRE("§6Légendaire", "cle_legendaire", Material.GOLD_NUGGET),
+        LEGENDAIRE_ALL("§6Légendaire (all)", "cle_legendaire_all", Material.GOLD_INGOT),
+        ANTIQUE("§dAntique", "cle_antique", Material.ECHO_SHARD),
+        ANTIQUE_ALL("§dAntique (all)", "cle_antique_all", Material.AMETHYST_SHARD),
+        QUANTIQUE("§bQuantique", "cle_quantique", Material.NETHER_STAR),
+        QUANTIQUE_ALL("§bQuantique (all)", "cle_quantique_all", Material.DIAMOND),
+        SPAWNER("§aSpawner", "cle_spawner", Material.SPAWNER),
+        SPAWNER_ALL("§aSpawner (all)", "cle_spawner_all", Material.ZOMBIE_SPAWN_EGG),
+        VOTE("§eVote", "cle_vote", Material.PAPER),
+        VOTE_ALL("§eVote (all)", "cle_vote_all", Material.MAP);
 
         private final String displayName;
         private final String commandName;

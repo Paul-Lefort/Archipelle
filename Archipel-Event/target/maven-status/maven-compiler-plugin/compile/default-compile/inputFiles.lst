@@ -1,7 +1,17 @@
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/ArchiEvent.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/EventData.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/commands/ArchiEventCommand.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/commands/ArchiEventTabCompleter.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/Game.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/dac/DACData.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/dac/DACGame.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/dac/DACListener.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/nexus/NexusData.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/nexus/NexusGame.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/nexus/NexusListener.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/nexus/NexusTeam.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/quiz/QuizChatListener.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/quiz/QuizData.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/quiz/QuizLogic.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/listeners/MenuListener.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/manager/MenuManager.java
