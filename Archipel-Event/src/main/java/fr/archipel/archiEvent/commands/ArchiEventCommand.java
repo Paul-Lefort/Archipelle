@@ -6,6 +6,9 @@ import fr.archipel.archiEvent.games.Game;
 import fr.archipel.archiEvent.games.dac.DACData;
 import fr.archipel.archiEvent.games.dac.DACGame;
 import fr.archipel.archiEvent.games.dac.DACListener;
+import fr.archipel.archiEvent.games.spleef.SpleefData;
+import fr.archipel.archiEvent.games.spleef.SpleefGame;
+import fr.archipel.archiEvent.games.spleef.SpleefListener;
 import fr.archipel.archiEvent.games.nexus.NexusData;
 import fr.archipel.archiEvent.games.nexus.NexusGame;
 import fr.archipel.archiEvent.games.nexus.NexusListener;
@@ -37,9 +40,11 @@ public class ArchiEventCommand implements CommandExecutor {
     private final QuizData quizData;
     private final NexusData nexusData;
     private final DACData dacData;
+    private final SpleefData spleefData;
     private final QuizLogic quizLogic;
     private final NexusGame nexusGame;
     private final DACGame dacGame;
+    private final SpleefGame spleefGame;
     private final MenuManager menuManager;
     private final RewardManager rewardManager;
 
@@ -47,30 +52,48 @@ public class ArchiEventCommand implements CommandExecutor {
     private QuizChatListener quizChatListener;
     private NexusListener nexusListener;
     private DACListener dacListener;
+    private SpleefListener spleefListener;
     private BukkitTask registrationReminderTask;
 
-    public ArchiEventCommand(ArchiEvent plugin, EventData eventData, QuizData quizData, NexusData nexusData, DACData dacData) {
+    public ArchiEventCommand(ArchiEvent plugin, EventData eventData, QuizData quizData, NexusData nexusData, DACData dacData, SpleefData spleefData) {
         this.plugin = plugin;
         this.eventData = eventData;
         this.quizData = quizData;
         this.nexusData = nexusData;
         this.dacData = dacData;
+        this.spleefData = spleefData;
         this.quizLogic = new QuizLogic(eventData, quizData);
         this.nexusGame = new NexusGame(eventData, nexusData);
         this.dacGame = new DACGame(eventData, dacData);
+        this.spleefGame = new SpleefGame(eventData, spleefData);
         this.menuManager = new MenuManager();
         this.rewardManager = new RewardManager(eventData);
 
         this.nexusGame.setOnGameEnd(() -> {
             nexusGame.broadcastDamageRanking();
             Map<String, Integer> ranking = nexusGame.getRanking();
-            if (!ranking.isEmpty()) rewardManager.distributeRewards(ranking);
+            if (!ranking.isEmpty()) {
+                broadcastRanking(ranking, nexusGame.getDisplayScores());
+                rewardManager.distributeRewards(ranking);
+            }
             cleanup();
         });
 
         this.dacGame.setOnGameEnd(() -> {
             Map<String, Integer> ranking = dacGame.getRanking();
-            if (!ranking.isEmpty()) rewardManager.distributeRewards(ranking);
+            if (!ranking.isEmpty()) {
+                broadcastRanking(ranking, dacGame.getDisplayScores());
+                rewardManager.distributeRewards(ranking);
+            }
+            cleanup();
+        });
+
+        this.spleefGame.setOnGameEnd(() -> {
+            Map<String, Integer> ranking = spleefGame.getRanking();
+            if (!ranking.isEmpty()) {
+                broadcastRanking(ranking, spleefGame.getDisplayScores());
+                rewardManager.distributeRewards(ranking);
+            }
             cleanup();
         });
     }
@@ -87,6 +110,16 @@ public class ArchiEventCommand implements CommandExecutor {
             return true;
         }
 
+        // Commandes staff
+        boolean isStaffCommand = List.of("create","open","start","test","stop","cancel",
+                        "setnexus","setarena","setpool","setjump","setspleefspawn","question")
+                .contains(args[0].toLowerCase());
+
+        if (isStaffCommand && !player.hasPermission("archievent.staff")) {
+            player.sendMessage("§c§l[!] §7Tu n'as pas la permission d'utiliser cette commande.");
+            return true;
+        }
+
         switch (args[0].toLowerCase()) {
             case "create"    -> menuManager.openCreationMenu(player);
             case "open"      -> handleOpen(player);
@@ -98,6 +131,7 @@ public class ArchiEventCommand implements CommandExecutor {
             case "setnexus"  -> handleSetNexus(player, args);
             case "setpool"   -> handleSetPool(player, args);
             case "setjump"   -> handleSetJump(player);
+            case "setarena"  -> handleSetArena(player, args);
             case "stop"      -> handleStop(player);
             case "cancel"    -> handleCancel(player);
             default          -> sendHelp(player);
@@ -105,7 +139,6 @@ public class ArchiEventCommand implements CommandExecutor {
         return true;
     }
 
-    // Ouvre les inscriptions — staff only
     private void handleOpen(Player player) {
         if (eventData.getEventType() == null) {
             player.sendMessage("§c§l[!] §7Configure l'évent avec /archievent create d'abord.");
@@ -140,7 +173,6 @@ public class ArchiEventCommand implements CommandExecutor {
         }, fiveMinutes, fiveMinutes);
     }
 
-    // Inscription d'un joueur — accessible à tous
     private void handleParticipe(Player player) {
         if (!eventData.isRegistrationOpen()) {
             player.sendMessage("§c§l[!] §7Les inscriptions ne sont pas ouvertes.");
@@ -189,7 +221,33 @@ public class ArchiEventCommand implements CommandExecutor {
                 Bukkit.getPluginManager().registerEvents(quizChatListener, plugin);
             }
             currentGame = quizLogic;
+            announceStart();
             quizLogic.quizStart();
+
+        } else if (eventData.getEventType().contains("Spleef")) {
+            if (!spleefData.isArenaDefined()) {
+                player.sendMessage("§c§l[!] §7Définis le centre de l'arène avec §e/archievent setarena");
+                return;
+            }
+            if (!testMode && eventData.getRegisteredCount() < 2) {
+                player.sendMessage("§c§l[!] §7Il faut au moins 2 joueurs inscrits pour démarrer.");
+                return;
+            }
+
+            List<UUID> players = new ArrayList<>(eventData.getRegisteredPlayers());
+            if (testMode) {
+                if (!players.contains(player.getUniqueId())) players.add(player.getUniqueId());
+                player.sendMessage("§e§l[TEST] §7Mode test activé.");
+            }
+            eventData.closeRegistration();
+
+            if (spleefListener == null) {
+                spleefListener = new SpleefListener(spleefData, spleefGame);
+                Bukkit.getPluginManager().registerEvents(spleefListener, plugin);
+            }
+            currentGame = spleefGame;
+            announceStart();
+            spleefGame.start(players);
 
         } else if (eventData.getEventType().contains("Dès") || eventData.getEventType().contains("DAC")) {
             if (!dacData.isPoolDefined()) {
@@ -221,6 +279,7 @@ public class ArchiEventCommand implements CommandExecutor {
                 dacGame.setDACListener(dacListener);
             }
             currentGame = dacGame;
+            announceStart();
             dacGame.start(players);
 
         } else if (eventData.getEventType().contains("Nexus")) {
@@ -237,7 +296,6 @@ public class ArchiEventCommand implements CommandExecutor {
                 return;
             }
 
-            // En mode test, inscrire automatiquement le joueur qui lance
             if (testMode) {
                 eventData.register(player.getUniqueId());
                 player.sendMessage("§e§l[TEST] §7Mode test activé — inscriptions ignorées.");
@@ -250,6 +308,7 @@ public class ArchiEventCommand implements CommandExecutor {
                 Bukkit.getPluginManager().registerEvents(nexusListener, plugin);
             }
             currentGame = nexusGame;
+            announceStart();
             nexusGame.start();
         }
     }
@@ -260,7 +319,6 @@ public class ArchiEventCommand implements CommandExecutor {
             return;
         }
 
-        // Centrer proprement sur le bloc (entier + 0.5)
         Location loc = new Location(
                 player.getWorld(),
                 player.getLocation().getBlockX() + 0.5,
@@ -313,6 +371,87 @@ public class ArchiEventCommand implements CommandExecutor {
         dacData.setJumpLocation(loc);
         player.sendMessage("§b§l[DAC] §fPoint de saut positionné en "
                 + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
+    }
+
+    private void handleSetArena(Player player, String[] args) {
+        Location loc = new Location(player.getWorld(),
+                player.getLocation().getBlockX() + 0.5,
+                player.getLocation().getBlockY() - 1,  // -1 pour que la surface soit à tes pieds
+                player.getLocation().getBlockZ() + 0.5);
+
+        spleefData.setArenaCenter(loc);
+
+        spleefGame.generateArena();
+
+        player.sendMessage("§f§l[SPLEEF] §fCentre positionné en "
+                + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
+        player.sendMessage("§7Spawns calculés automatiquement — arène générée !");
+    }
+
+    private void announceStart() {
+        String eventName = eventData.getEventType() != null ? eventData.getEventType() : "Event";
+        boolean isTeam = eventData.getRewardMode() == EventData.RewardMode.TEAM;
+
+        Bukkit.broadcastMessage(" ");
+        Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
+        Bukkit.broadcastMessage("§e§l  Début de l'événement : §6§n" + eventName.replaceAll("§.", "").toUpperCase());
+        Bukkit.broadcastMessage("§e ");
+        Bukkit.broadcastMessage("§f    Les récompenses seront les suivantes :");
+
+        if (isTeam) {
+            Bukkit.broadcastMessage("§7    Gagnant - " + formatRewards(1));
+            Bukkit.broadcastMessage("§7    Perdant - " + formatRewards(2));
+        } else {
+            Bukkit.broadcastMessage("§7    1er  - " + formatRewards(1));
+            Bukkit.broadcastMessage("§7    2ème - " + formatRewards(2));
+            Bukkit.broadcastMessage("§7    3ème - " + formatRewards(3));
+        }
+
+        Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
+        Bukkit.broadcastMessage(" ");
+
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            online.playSound(online.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+        }
+    }
+
+    private String formatRewards(int place) {
+        List<String> parts = new ArrayList<>();
+        for (EventData.RewardType type : EventData.RewardType.values()) {
+            int amount = eventData.getReward(place, type);
+            if (amount > 0) {
+                if (type == EventData.RewardType.MONEY) {
+                    parts.add("§e" + amount + "$ " + type.getDisplayName());
+                } else {
+                    parts.add("§e" + amount + "x " + type.getDisplayName());
+                }
+            }
+        }
+        return parts.isEmpty() ? "§8Aucune" : String.join("§f, ", parts);
+    }
+
+    public void broadcastRanking(Map<String, Integer> ranking, Map<String, String> displayScores) {
+        boolean isTeamMode = eventData.getRewardMode() == EventData.RewardMode.TEAM;
+
+        Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
+        Bukkit.broadcastMessage("§e§l   CLASSEMENT FINAL : §f" + eventData.getEventType());
+
+        ranking.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue())
+                .forEach(entry -> {
+                    String label;
+                    if (isTeamMode) {
+                        label = entry.getValue() == 1 ? "§6§l🏆 Gagnant" : "§7§l😔 Perdant";
+                    } else {
+                        String suffix = (entry.getValue() == 1) ? "er" : "ème";
+                        label = "§f" + entry.getValue() + suffix;
+                    }
+                    String score = displayScores.getOrDefault(entry.getKey(), "");
+                    String scorePart = score.isEmpty() ? "" : " §7- §f" + score;
+                    Bukkit.broadcastMessage("§f    " + label + " §e" + entry.getKey() + scorePart);
+                });
+
+        Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
     }
 
     private void handleStop(Player player) {
@@ -387,6 +526,10 @@ public class ArchiEventCommand implements CommandExecutor {
             HandlerList.unregisterAll(dacListener);
             dacListener = null;
         }
+        if (spleefListener != null) {
+            HandlerList.unregisterAll(spleefListener);
+            spleefListener = null;
+        }
         nexusGame.clearHolograms();
         nexusGame.clearScoreboard();
         currentGame = null;
@@ -394,17 +537,30 @@ public class ArchiEventCommand implements CommandExecutor {
         quizData.reset();
         nexusData.reset();
         dacData.reset();
+        spleefData.reset();
     }
 
     private void sendHelp(Player player) {
+        boolean isStaff = player.hasPermission("archievent.staff");
+
         player.sendMessage("§8§m      §r §6§lArchiEvent §8§m      ");
-        player.sendMessage("§e/archievent create                §7- Configurer l'évent");
-        player.sendMessage("§e/archievent open                  §7- Ouvrir les inscriptions");
+
         player.sendMessage("§e/archievent participe             §7- S'inscrire à l'évent");
         player.sendMessage("§e/archievent quitter               §7- Se désinscrire de l'évent");
-        player.sendMessage("§e/archievent start                 §7- Lancer l'évent");
-        player.sendMessage("§e/archievent setnexus <rouge|bleu> §7- Poser un Nexus");
-        player.sendMessage("§e/archievent stop                  §7- Finir et donner les lots");
-        player.sendMessage("§e/archievent cancel                §7- Tout stopper sans lots");
+
+        if (isStaff) {
+            player.sendMessage("§8§m-----------§r §7Staff §8§m-----------");
+            player.sendMessage("§e/archievent create                §7- Configurer l'évent");
+            player.sendMessage("§e/archievent open                  §7- Ouvrir les inscriptions");
+            player.sendMessage("§e/archievent start                 §7- Lancer l'évent");
+            player.sendMessage("§e/archievent test                  §7- Lancer sans vérif. inscrits");
+            player.sendMessage("§e/archievent stop                  §7- Finir et donner les lots");
+            player.sendMessage("§e/archievent cancel                §7- Tout stopper sans lots");
+            player.sendMessage("§e/archievent question <q> <r>      §7- Poser une question (Quiz)");
+            player.sendMessage("§e/archievent setnexus <rouge|bleu> §7- Poser un Nexus");
+            player.sendMessage("§e/archievent setarena              §7- Définir l'arène Spleef");
+            player.sendMessage("§e/archievent setpool <1|2>         §7- Définir la piscine DAC");
+            player.sendMessage("§e/archievent setjump               §7- Définir le plongeoir DAC");
+        }
     }
 }

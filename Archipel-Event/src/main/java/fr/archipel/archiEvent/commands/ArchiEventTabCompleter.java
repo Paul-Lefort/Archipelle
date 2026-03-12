@@ -24,16 +24,24 @@ public class ArchiEventTabCompleter implements TabCompleter {
         if (!(sender instanceof Player)) return List.of();
 
         String type = eventData.getEventType();
+        boolean isStaff = sender.hasPermission("archievent.staff");
 
         if (args.length == 1) {
             List<String> suggestions;
 
+            if (!isStaff) {
+                suggestions = List.of("participe", "quitter");
+                return filter(suggestions, args[0]);
+            }
+
             if (type == null) {
-                // Pas d'event configuré
                 suggestions = List.of("create");
 
             } else if (type.contains("Quiz")) {
-                suggestions = List.of("create", "question", "start", "stop", "cancel");
+                suggestions = List.of("create", "question", "quitter", "start", "stop", "cancel");
+
+            } else if (type.contains("Spleef")) {
+                suggestions = List.of("create", "setarena", "open", "participe", "quitter", "start", "test", "stop", "cancel");
 
             } else if (type.contains("Dès") || type.contains("DAC")) {
                 suggestions = List.of("create", "setpool", "setjump", "open", "participe", "quitter", "start", "test", "stop", "cancel");
@@ -55,6 +63,8 @@ public class ArchiEventTabCompleter implements TabCompleter {
         if (args.length == 2 && args[0].equalsIgnoreCase("setpool")) {
             return filter(List.of("1", "2"), args[1]);
         }
+
+
 
         return List.of();
     }

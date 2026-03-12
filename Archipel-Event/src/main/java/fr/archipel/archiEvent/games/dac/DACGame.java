@@ -44,13 +44,16 @@ public class DACGame implements Game {
     // --- DÉMARRAGE ---
 
     public void start(List<UUID> registeredPlayers) {
+        // Remplir la piscine d'eau
         fillPoolWithWater();
 
+        // Construire la file dans l'ordre donné (déjà shuffled dans ArchiEventCommand)
         for (UUID uuid : registeredPlayers) {
             dacData.getJumpQueue().offer(uuid);
             dacData.addScore(uuid, 0); // Initialiser le score à 0
         }
 
+        // TP tout le monde en spectateur sur le plongeoir
         for (UUID uuid : registeredPlayers) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
@@ -66,6 +69,7 @@ public class DACGame implements Game {
         Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
         Bukkit.broadcastMessage(" ");
 
+        // Lancer le premier sauteur
         nextJumper();
     }
 
@@ -74,6 +78,7 @@ public class DACGame implements Game {
     public void nextJumper() {
         UUID next = dacData.pollNextJumper();
         if (next == null) {
+            // File vide — ne devrait pas arriver mais sécurité
             endGame();
             return;
         }
@@ -82,22 +87,28 @@ public class DACGame implements Game {
         Player jumper = Bukkit.getPlayer(next);
 
         if (jumper == null) {
+            // Joueur déconnecté, on passe au suivant
             nextJumper();
             return;
         }
 
+        // Passer le sauteur en aventure et TP sur le plongeoir
         jumper.setGameMode(GameMode.ADVENTURE);
         jumper.teleport(dacData.getJumpLocation());
 
         Bukkit.broadcastMessage("§e§l[DAC] §f" + jumper.getName() + " §7saute !");
         jumper.sendMessage("§a§l[DAC] §fC'est ton tour ! Saute !");
 
+        // Titre pour le sauteur
         jumper.sendTitle("§a§lÀ TOI !", "§fSaute dans la piscine !", 10, 40, 10);
 
+        // Démarrer la détection d'atterrissage
         if (dacListener != null) dacListener.startWatching();
     }
 
-
+    /**
+     * Appelé par DACListener quand un joueur atterrit dans la zone de plongeon.
+     */
     public void onPlayerLand(Player player, Location landLocation) {
         if (!player.getUniqueId().equals(dacData.getCurrentJumper())) return;
 
@@ -105,11 +116,13 @@ public class DACGame implements Game {
         Material type = landBlock.getType();
 
         if (type == Material.WATER) {
+            // Vérifier si entouré de 4 laines (gauche, droite, devant, derrière)
             boolean surrounded = isWoolSurrounded(landLocation);
             int points = surrounded ? 3 : 1;
 
             dacData.addScore(player.getUniqueId(), points);
 
+            // Placer une laine aléatoire à l'endroit où il est tombé
             Material wool = WOOL_COLORS[random.nextInt(WOOL_COLORS.length)];
             landBlock.setType(wool);
 
@@ -125,20 +138,25 @@ public class DACGame implements Game {
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_SPLASH, 1f, 1f);
             }
 
+            // Repasser en spectateur
             player.setGameMode(GameMode.SPECTATOR);
 
+            // Remettre en file pour la rotation
             dacData.requeueJumper(player.getUniqueId());
 
+            // Vérifier si la piscine est pleine (plus d'eau)
             if (!hasWaterLeft()) {
                 endGame();
                 return;
             }
 
         } else {
+            // Raté — atterri sur de la laine ou hors piscine
             Bukkit.broadcastMessage("§c[DAC] §e" + player.getName() + " §fa raté ! §c0 point");
             player.sendTitle("§c§lRATÉ !", "§fPas dans l'eau...", 10, 40, 10);
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
 
+            // Annuler les dégâts
             player.setHealth(Math.min(player.getHealth() + 20, player.getMaxHealth()));
             player.setFoodLevel(20);
 
@@ -151,6 +169,7 @@ public class DACGame implements Game {
             }
         }
 
+        // Petit délai avant le prochain sauteur
         Bukkit.getScheduler().runTaskLater(JavaPlugin.getPlugin(ArchiEvent.class), this::nextJumper, 20L * 3);
     }
 
@@ -164,6 +183,7 @@ public class DACGame implements Game {
         player.sendTitle("§c§lHORS PISCINE !", "§fTu as raté !", 10, 40, 10);
         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
 
+        // Annuler les dégâts de chute
         player.setHealth(Math.min(player.getHealth() + 20, player.getMaxHealth()));
 
         player.setGameMode(GameMode.SPECTATOR);
@@ -264,9 +284,11 @@ public class DACGame implements Game {
                 world.getBlockAt(x + 1, y, z).getType()  // est
         };
 
-
+        // Chaque voisin doit être soit de la laine, soit un bord (hors piscine = ignoré)
+        // Un voisin ne compte comme obstacle que s'il est dans la piscine ET n'est pas de la laine
         for (Material neighbor : neighbors) {
             if (neighbor == Material.WATER) return false; // voisin encore en eau = pas entouré
+            // laine ou bord (pierre, air hors piscine...) = ok, on continue
         }
         return true;
     }

@@ -53,24 +53,7 @@ public class QuizLogic implements Game {
     }
 
     public void quizStart() {
-        Bukkit.broadcastMessage(" ");
-        Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
-
-        String eventName = eventData.getEventType() != null ? eventData.getEventType() : "Quiz";
-        String cleanName = ChatColor.stripColor(eventName);
-
-        Bukkit.broadcastMessage("§e§l  Début de l'événement : §6§n" + cleanName.toUpperCase());
-        Bukkit.broadcastMessage("§e ");
-        Bukkit.broadcastMessage("§f    Les récompenses seront les suivantes :");
-        Bukkit.broadcastMessage("§7    1er - " + formatRewards(1));
-        Bukkit.broadcastMessage("§7    2ème - " + formatRewards(2));
-        Bukkit.broadcastMessage("§7    3ème - " + formatRewards(3));
-        Bukkit.broadcastMessage("§6§l§m-------------------------------------------");
-        Bukkit.broadcastMessage(" ");
-
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            online.playSound(online.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
-        }
+        // L'annonce de démarrage est gérée par ArchiEventCommand.announceStart()
     }
 
     public void handleQuestion(Player player, String[] args) {

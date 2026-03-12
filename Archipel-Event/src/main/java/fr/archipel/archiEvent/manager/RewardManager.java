@@ -16,6 +16,8 @@ public class RewardManager {
     }
 
     public void distributeRewards(Map<String, Integer> ranking) {
+        // En mode TEAM : place 1 = gagnant, place 2 = perdant
+        // En mode TOP3 : place 1, 2, 3
         int maxPlace = eventData.getRewardMode() == RewardMode.TEAM ? 2 : 3;
 
         for (Map.Entry<String, Integer> entry : ranking.entrySet()) {
@@ -27,8 +29,13 @@ public class RewardManager {
             for (RewardType type : RewardType.values()) {
                 int amount = eventData.getReward(place, type);
                 if (amount > 0) {
-                    // /cle_legendaire <joueur> <quantité>
-                    String cmd = type.getCommandName() + " " + playerName + " " + amount;
+                    String cmd;
+                    if (type == RewardType.MONEY) {
+                        cmd = "eco give " + playerName + " " + amount;
+                    } else {
+                        cmd = type.getCommandName() + " " + playerName + " " + amount;
+                    }
+                    Bukkit.getLogger().info("[ArchiEvent] Récompense : " + cmd);
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
                 }
             }
