@@ -126,6 +126,10 @@ public class MenuListener implements Listener {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
 
+        boolean isMoney = originalMaterial == EventData.RewardType.MONEY.getGuiMaterial()
+                && item.getItemMeta().getDisplayName().contains("Money");
+        int step = isMoney ? 500 : 1;
+
         List<String> lore = meta.getLore();
         int count = 0;
         if (lore != null && !lore.isEmpty()) {
@@ -133,14 +137,21 @@ public class MenuListener implements Listener {
             count = digits.isEmpty() ? 0 : Integer.parseInt(digits);
         }
 
-        if (add) count++;
-        else if (count > 0) count--;
+        if (add) count += step;
+        else if (count >= step) count -= step;
 
         List<String> newLore = new ArrayList<>();
-        newLore.add("§fQuantité : §b" + count);
-        newLore.add(" ");
-        newLore.add("§7Clique gauche: §a+1");
-        newLore.add("§7Clique droit: §c-1");
+        if (isMoney) {
+            newLore.add("§fSomme : §a" + count + "$");
+            newLore.add(" ");
+            newLore.add("§7Clique gauche: §a+500$");
+            newLore.add("§7Clique droit: §c-500$");
+        } else {
+            newLore.add("§fQuantité : §b" + count);
+            newLore.add(" ");
+            newLore.add("§7Clique gauche: §a+1");
+            newLore.add("§7Clique droit: §c-1");
+        }
         meta.setLore(newLore);
         item.setItemMeta(meta);
         item.setType(originalMaterial);
@@ -151,6 +162,7 @@ public class MenuListener implements Listener {
         List<String> lore = item.getItemMeta().getLore();
         if (lore.isEmpty()) return 0;
         try {
+            // Fonctionne pour "Quantité : 3" et "Somme : 1500$"
             return Integer.parseInt(lore.get(0).replaceAll("[^0-9]", ""));
         } catch (NumberFormatException e) {
             return 0;

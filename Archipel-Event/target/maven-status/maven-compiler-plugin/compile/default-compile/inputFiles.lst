@@ -13,6 +13,9 @@
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/quiz/QuizChatListener.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/quiz/QuizData.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/quiz/QuizLogic.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/spleef/SpleefData.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/spleef/SpleefGame.java
+/home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/games/spleef/SpleefListener.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/listeners/MenuListener.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/manager/MenuManager.java
 /home/lefort/projet/archipel/Archipel-Event/src/main/java/fr/archipel/archiEvent/manager/RewardManager.java

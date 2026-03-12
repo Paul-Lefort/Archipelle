@@ -4,14 +4,17 @@ fr/archipel/archiEvent/commands/ArchiEventTabCompleter.class
 fr/archipel/archiEvent/games/dac/DACGame.class
 fr/archipel/archiEvent/games/nexus/NexusData.class
 fr/archipel/archiEvent/ArchiEvent.class
+fr/archipel/archiEvent/games/spleef/SpleefGame.class
 fr/archipel/archiEvent/manager/RewardManager.class
 fr/archipel/archiEvent/manager/MenuManager.class
 fr/archipel/archiEvent/commands/ArchiEventCommand.class
 fr/archipel/archiEvent/listeners/MenuListener.class
+fr/archipel/archiEvent/games/spleef/SpleefListener.class
 fr/archipel/archiEvent/games/quiz/QuizLogic.class
 fr/archipel/archiEvent/games/nexus/NexusListener.class
 fr/archipel/archiEvent/EventData$RewardType.class
 fr/archipel/archiEvent/EventData.class
+fr/archipel/archiEvent/games/spleef/SpleefData.class
 fr/archipel/archiEvent/games/nexus/NexusTeam.class
 fr/archipel/archiEvent/games/dac/DACListener.class
 fr/archipel/archiEvent/games/quiz/QuizChatListener.class

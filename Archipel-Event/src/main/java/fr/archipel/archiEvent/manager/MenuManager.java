@@ -48,8 +48,12 @@ public class MenuManager {
 
             EventData.RewardType[] types = EventData.RewardType.values();
             for (int j = 0; j < types.length; j++) {
+                boolean isMoney = types[j] == EventData.RewardType.MONEY;
+                String countLabel = isMoney ? "§fSomme : §a0$" : "§fQuantité : §b0";
+                String addLabel = isMoney ? "§7Clique gauche: §a+500$" : "§7Clique gauche: §a+1";
+                String removeLabel = isMoney ? "§7Clique droit: §c-500$" : "§7Clique droit: §c-1";
                 gui.setItem(startSlot + 2 + j, createItem(types[j].getGuiMaterial(), types[j].getDisplayName(),
-                        "§fQuantité : §b0", " ", "§7Clique gauche: §a+1", "§7Clique droit: §c-1"));
+                        countLabel, " ", addLabel, removeLabel));
             }
         }
 
@@ -66,12 +70,16 @@ public class MenuManager {
 
         EventData.RewardType[] types = EventData.RewardType.values();
         for (int j = 0; j < types.length; j++) {
+            boolean isMoney = types[j] == EventData.RewardType.MONEY;
+            String countLabel = isMoney ? "§fSomme : §a0$" : "§fQuantité : §b0";
+            String addLabel = isMoney ? "§7Clique gauche: §a+500$" : "§7Clique gauche: §a+1";
+            String removeLabel = isMoney ? "§7Clique droit: §c-500$" : "§7Clique droit: §c-1";
             // Ligne gagnant (row 0)
             gui.setItem(2 + j, createItem(types[j].getGuiMaterial(), types[j].getDisplayName(),
-                    "§fQuantité : §b0", " ", "§7Clique gauche: §a+1", "§7Clique droit: §c-1"));
+                    countLabel, " ", addLabel, removeLabel));
             // Ligne perdant (row 1)
             gui.setItem(11 + j, createItem(types[j].getGuiMaterial(), types[j].getDisplayName(),
-                    "§fQuantité : §b0", " ", "§7Clique gauche: §a+1", "§7Clique droit: §c-1"));
+                    countLabel, " ", addLabel, removeLabel));
         }
 
         gui.setItem(17, createItem(Material.EMERALD_BLOCK, "§a§lVALIDER", "§7Enregistrer la config"));

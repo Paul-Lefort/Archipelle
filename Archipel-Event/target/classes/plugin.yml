@@ -1,8 +1,16 @@
 name: ArchiEvent
-version: 1.0
+version: '1.0-SNAPSHOT'
 main: fr.archipel.archiEvent.ArchiEvent
-api-version: 1.21
+api-version: '1.21'
+softdepend: [WorldEdit, FastAsyncWorldEdit]
+
 commands:
   archievent:
-    description: Commande principale d'ArchiEvent
-    permission: archievent.admin
+    description: Commande principale ArchiEvent
+    usage: /archievent <commande>
+    aliases: [event]
+
+permissions:
+  archievent.staff:
+    description: Accès aux commandes staff ArchiEvent
+    default: op

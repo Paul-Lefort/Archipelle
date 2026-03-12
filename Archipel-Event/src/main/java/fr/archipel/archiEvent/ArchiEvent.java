@@ -3,6 +3,7 @@ package fr.archipel.archiEvent;
 import fr.archipel.archiEvent.commands.ArchiEventCommand;
 import fr.archipel.archiEvent.commands.ArchiEventTabCompleter;
 import fr.archipel.archiEvent.games.dac.DACData;
+import fr.archipel.archiEvent.games.spleef.SpleefData;
 import fr.archipel.archiEvent.games.nexus.NexusData;
 import fr.archipel.archiEvent.games.quiz.QuizData;
 import fr.archipel.archiEvent.listeners.MenuListener;
@@ -18,8 +19,9 @@ public class ArchiEvent extends JavaPlugin {
         QuizData quizData = new QuizData();
         NexusData nexusData = new NexusData();
         DACData dacData = new DACData();
+        SpleefData spleefData = new SpleefData();
 
-        ArchiEventCommand executor = new ArchiEventCommand(this, eventData, quizData, nexusData, dacData);
+        ArchiEventCommand executor = new ArchiEventCommand(this, eventData, quizData, nexusData, dacData, spleefData);
         getCommand("archievent").setExecutor(executor);
         getCommand("archievent").setTabCompleter(new ArchiEventTabCompleter(eventData));
         this.executor = executor;
